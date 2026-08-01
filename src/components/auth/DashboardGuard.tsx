@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserSupabase } from '../../lib/supabaseClient';
 
@@ -10,7 +10,9 @@ interface DashboardGuardProps {
 
 export default function DashboardGuard({ children }: DashboardGuardProps) {
   const router = useRouter();
-  const supabase = useMemo(() => createBrowserSupabase(), []);
+  // Create the client once synchronously via a ref — avoids the setState null race
+  const supabaseRef = useRef(createBrowserSupabase());
+  const supabase = supabaseRef.current;
   const [checking, setChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 

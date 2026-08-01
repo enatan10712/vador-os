@@ -1,14 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/auth-helpers-nextjs';
 import { z } from 'zod';
 import { Button } from '../ui/Button';
 import { resolvePostLoginRoute } from '../../lib/auth-utils';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-key';
+import { createBrowserSupabase } from '../../lib/supabaseClient';
+import { getSupabaseConfig } from '../../lib/supabaseConfig';
 
 const emailSchema = z.string().trim().toLowerCase().email();
 const passwordSchema = z
@@ -24,6 +22,20 @@ interface AuthScreenProps {
   mode: AuthMode;
 }
 
+function friendlyAuthError(message: string) {
+  const normalized = message.toLowerCase();
+  if (normalized.includes('email not confirmed')) {
+    return 'Confirm your email from the link Supabase sent you, then try signing in again.';
+  }
+  if (normalized.includes('invalid login credentials')) {
+    return 'Invalid email or password.';
+  }
+  if (normalized.includes('provider is not enabled') || normalized.includes('unsupported provider')) {
+    return 'Google sign-in is not enabled in this Supabase project yet.';
+  }
+  return message;
+}
+
 export function AuthScreen({ mode }: AuthScreenProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -32,21 +44,35 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  
+  // Create Supabase client once and store it in a ref, never null
+  const authClientRef = useRef(createBrowserSupabase());
+  const authClient = authClientRef.current;
 
-  const authClient = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return null;
+  // Check environment config on mount
+  useEffect(() => {
+    const { url, anonKey } = getSupabaseConfig();
+    if (!anonKey || url === 'https://placeholder.supabase.co') {
+      setMessage(
+        'Authentication is misconfigured. Supabase environment variables are missing on Vercel. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your deployment settings.'
+      );
     }
+  }, []);
 
-    return createBrowserClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: rememberMe,
-      },
-    });
-  }, [rememberMe]);
+  useEffect(() => {
+    const error = new URLSearchParams(window.location.search).get('error');
+    if (error === 'auth_callback') {
+      setMessage('Authentication could not be completed. Check Supabase redirect URLs and try again.');
+    }
+  }, []);
 
   const redirectUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
+    return `${window.location.origin}/auth/callback?next=/dashboard`;
+  }, []);
+
+  const googleOAuthRedirect = useMemo(() => {
+    if (typeof window === 'undefined') return 'https://vador-os-main.vercel.app/auth/callback?next=/dashboard';
     return `${window.location.origin}/auth/callback?next=/dashboard`;
   }, []);
 
@@ -58,14 +84,11 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   }, []);
 
   useEffect(() => {
-    if (!authClient) {
-      return;
-    }
-
     let active = true;
     authClient.auth.getSession().then(({ data }) => {
-      if (active && data.session && data.session.user) {
+      if (active && data.session?.user) {
         router.replace(resolvePostLoginRoute(data.session.user));
+        router.refresh();
       }
     });
 
@@ -100,47 +123,63 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     return { email: emailResult.data, password };
   };
 
+  const completeSignIn = async (user: Parameters<typeof resolvePostLoginRoute>[0]) => {
+    const nextRoute = resolvePostLoginRoute(user);
+    setMessage('Signed in successfully. Redirecting...');
+    router.replace(nextRoute);
+    router.refresh();
+  };
+
   const handlePasswordSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const parsed = validateCommonFields();
     if (!parsed) return;
 
-    if (!authClient) {
-      setMessage('Authentication is unavailable in this environment.');
-      return;
-    }
-
     setLoading(true);
-    const result =
-      mode === 'signup'
-        ? await authClient.auth.signUp({
-            email: parsed.email,
-            password: parsed.password,
-            options: { emailRedirectTo: redirectUrl },
-          })
-        : await authClient.auth.signInWithPassword({
-            email: parsed.email,
-            password: parsed.password,
-          });
+    setMessage('');
 
-    setLoading(false);
+    try {
+      if (mode === 'signup') {
+        const result = await authClient.auth.signUp({
+          email: parsed.email,
+          password: parsed.password,
+          options: { emailRedirectTo: redirectUrl },
+        });
 
-    if (result.error) {
-      setMessage(result.error.message);
-      return;
-    }
+        if (result.error) {
+          setMessage(friendlyAuthError(result.error.message));
+          return;
+        }
 
-    if (mode === 'signup') {
-      setMessage(result.data.session ? 'Account created. Redirecting...' : 'Check your email to confirm your account.');
-      if (result.data.session) {
-        router.replace(resolvePostLoginRoute(result.data.user));
+        if (result.data.session?.user) {
+          setMessage('Account created. Redirecting...');
+          await completeSignIn(result.data.user);
+          return;
+        }
+
+        setMessage('Account created. Check your email to confirm, then sign in.');
+        return;
       }
-      return;
-    }
 
-    const nextRoute = resolvePostLoginRoute(result.data.user);
-    setMessage('Signed in successfully. Redirecting...');
-    router.replace(nextRoute);
+      const result = await authClient.auth.signInWithPassword({
+        email: parsed.email,
+        password: parsed.password,
+      });
+
+      if (result.error) {
+        setMessage(friendlyAuthError(result.error.message));
+        return;
+      }
+
+      if (!result.data.session?.user) {
+        setMessage('Sign-in succeeded but no session was created. Confirm your email, then try again.');
+        return;
+      }
+
+      await completeSignIn(result.data.user);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleMagicLink = async () => {
@@ -150,29 +189,19 @@ export function AuthScreen({ mode }: AuthScreenProps) {
       return;
     }
 
-    if (!authClient) {
-      setMessage('Authentication is unavailable in this environment.');
-      return;
-    }
-
     setLoading(true);
     const { error } = await authClient.auth.signInWithOtp({
       email: emailResult.data,
       options: { emailRedirectTo: redirectUrl },
     });
     setLoading(false);
-    setMessage(error ? error.message : 'Magic link sent. Check your inbox.');
+    setMessage(error ? friendlyAuthError(error.message) : 'Magic link sent. Check your inbox.');
   };
 
   const handlePasswordReset = async () => {
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
       setMessage('Enter a valid email to receive a reset link.');
-      return;
-    }
-
-    if (!authClient) {
-      setMessage('Authentication is unavailable in this environment.');
       return;
     }
 
@@ -184,28 +213,23 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
     setMessage(
       error
-        ? error.message
+        ? friendlyAuthError(error.message)
         : 'Password reset email sent. Check your inbox and follow the secure link to continue.'
     );
   };
 
   const handleGoogleOAuth = async () => {
-    if (!authClient) {
-      setMessage('Authentication is unavailable in this environment.');
-      return;
-    }
-
     setLoading(true);
     const { error } = await authClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: googleOAuthRedirect,
       },
     });
     setLoading(false);
 
     if (error) {
-      setMessage(error.message);
+      setMessage(friendlyAuthError(error.message));
     }
   };
 
@@ -217,8 +241,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           <h1 className="mt-3 text-3xl font-black">{mode === 'signup' ? 'Create account' : 'Sign in'}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === 'signup'
-              ? 'Create a secure account with email/password or Google OAuth.'
-              : 'Use email/password, magic link, or Google OAuth to access the restaurant cockpit.'}
+              ? 'Create a secure account with email/password. Confirm your email before signing in.'
+              : 'Use email/password or a magic link. Google OAuth must be enabled in Supabase to use that button.'}
           </p>
 
           <form onSubmit={handlePasswordSubmit} className="mt-6 space-y-4">
