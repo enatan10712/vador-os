@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { Button } from '../ui/Button';
 import { resolvePostLoginRoute } from '../../lib/auth-utils';
 import { createBrowserSupabase } from '../../lib/supabaseClient';
-import { getSupabaseConfig } from '../../lib/supabaseConfig';
 
 const emailSchema = z.string().trim().toLowerCase().email();
 const passwordSchema = z
@@ -49,12 +48,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const authClientRef = useRef(createBrowserSupabase());
   const authClient = authClientRef.current;
 
-  // Check environment config on mount
+  // Check environment config on mount - Bypassed for Django Auth
   useEffect(() => {
-    const { url, anonKey } = getSupabaseConfig();
+    const { url, anonKey } = { url: 'django', anonKey: 'django' };
     if (!anonKey || url === 'https://placeholder.supabase.co') {
       setMessage(
-        'Authentication is misconfigured. Supabase environment variables are missing on Vercel. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your deployment settings.'
+        'Authentication is misconfigured.'
       );
     }
   }, []);

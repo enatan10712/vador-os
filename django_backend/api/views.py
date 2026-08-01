@@ -20,6 +20,20 @@ from api.models import (
 from api.analytics import calculate_all_metrics
 from api.ai_assistant import generate_ai_recommendations
 from api.sync_and_alerts import compute_real_time_alerts, process_offline_sync
+from api.logger import log_structured
+
+import re
+
+# HELPER: Validate password strength based on standard complexity constraints
+def validate_password_strength(password):
+    if len(password) < 8:
+        raise ValidationError("Password must be at least 8 characters long.")
+    if not re.search(r"[a-z]", password):
+        raise ValidationError("Password must include at least one lowercase letter.")
+    if not re.search(r"[A-Z]", password):
+        raise ValidationError("Password must include at least one uppercase letter.")
+    if not re.search(r"[0-9]", password):
+        raise ValidationError("Password must include at least one number.")
 
 # HELPER: Get active user from cryptographic session (request.user)
 def get_user_from_request(request):
@@ -58,6 +72,11 @@ def register_view(request):
     if not email or not password:
         return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+        validate_password_strength(password)
+    except ValidationError as e:
+        return Response({'error': e.message}, status=status.HTTP_400_BAD_REQUEST)
+
     if User.objects.filter(username=email).exists():
         return Response({'error': 'User with this email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -83,6 +102,8 @@ def register_view(request):
                 is_active=True
             )
 
+    log_structured('register_user', user.id, restaurant_slug, {'role': role})
+
     return Response({
         'user': {
             'id': str(user.id),
@@ -104,6 +125,7 @@ def login_view(request):
 
     user = authenticate(username=email, password=password)
     if not user:
+        log_structured('login_failed', details={'email': email})
         return Response({'error': 'Invalid email or password.'}, status=status.HTTP_401_UNAUTHORIZED)
 
     django_login(request, user)
@@ -118,6 +140,8 @@ def login_view(request):
         except Restaurant.DoesNotExist:
             pass
 
+    log_structured('login_success', user.id, restaurant_slug, {'role': role})
+
     return Response({
         'user': {
             'id': str(user.id),
@@ -130,7 +154,10 @@ def login_view(request):
 
 @api_view(['POST'])
 def logout_view(request):
+    user = get_user_from_request(request)
+    user_id = user.id if user else None
     django_logout(request)
+    log_structured('logout', user_id)
     return Response({'success': True})
 
 
@@ -301,6 +328,8 @@ def orders_list_create(request):
                 payload={'title': 'New order received', 'description': f'Order {order.id} was placed.'}
             )
 
+        log_structured('create_order', user.id, restaurant.slug, {'order_id': str(order.id), 'total': float(total_amount)})
+
         return Response({
             'order': {
                 'id': str(order.id),
@@ -418,6 +447,8 @@ def inventory_list_update(request):
                     }
                 )
 
+        log_structured('update_inventory', user.id, restaurant.slug, {'item_id': str(item.id), 'delta': quantity_delta})
+
         return Response({
             'id': str(item.id),
             'name': item.name,
@@ -506,6 +537,7 @@ def offline_sync_view(request):
         return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
     results = process_offline_sync(restaurant, user, request.data)
+    log_structured('offline_sync', user.id, restaurant.slug, results)
     return Response(results)
 
 
