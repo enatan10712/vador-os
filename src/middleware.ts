@@ -80,9 +80,11 @@ export async function middleware(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
+        // First apply to the request so downstream reads see updated cookies
         cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });
+        // Rebuild response preserving request headers, then apply cookies to response
         response = NextResponse.next({
           request: {
             headers: requestHeaders,
@@ -96,9 +98,16 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Prefer getUser() so the auth token is validated/refreshed and cookies stay in sync.
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData.user;
+  // Use getSession() for page routing decisions — it reads cookies locally without
+  // a network round-trip, so it works reliably immediately after the callback sets cookies.
+  // API routes that need strict auth validation use requireAuth() inside the handler.
+  let user = null;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    user = sessionData.session?.user ?? null;
+  } catch {
+    // Degrade gracefully — treat as unauthenticated
+  }
 
   if (isApiPath(pathname)) {
     if (isPublicApiPath(pathname)) {
