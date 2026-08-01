@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const DJANGO_BACKEND_URL = 'http://127.0.0.1:8000';
+const DJANGO_BACKEND_URL = process.env.DJANGO_BACKEND_URL ?? 'http://127.0.0.1:8000';
 
 export async function forwardToDjango(request: Request, path: string, method: string = 'GET') {
   const tenantSlug = request.headers.get('x-tenant-slug') || 'robusta-coffee';
