@@ -9,13 +9,17 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') ?? '/dashboard';
   const safeNext = next.startsWith('/') ? next : '/dashboard';
 
+  // Determine the correct origin — prefer NEXT_PUBLIC_SITE_URL on Vercel
+  // to avoid redirect mismatches when Supabase sends back to a preview URL
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
+
   if (!code) {
-    return NextResponse.redirect(new URL('/login?error=auth_callback', origin));
+    return NextResponse.redirect(new URL('/login?error=auth_callback', siteUrl));
   }
 
   const { url, anonKey } = getSupabaseConfig();
   const cookieStore = await cookies();
-  const redirectResponse = NextResponse.redirect(new URL(safeNext, origin));
+  const redirectResponse = NextResponse.redirect(new URL(safeNext, siteUrl));
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -33,7 +37,10 @@ export async function GET(request: Request) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(new URL('/login?error=auth_callback', origin));
+    console.error('[auth/callback] exchangeCodeForSession error:', error.message);
+    return NextResponse.redirect(
+      new URL(`/login?error=auth_callback&reason=${encodeURIComponent(error.message)}`, siteUrl)
+    );
   }
 
   return redirectResponse;

@@ -60,9 +60,23 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   }, []);
 
   useEffect(() => {
-    const error = new URLSearchParams(window.location.search).get('error');
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const reason = params.get('reason');
     if (error === 'auth_callback') {
-      setMessage('Authentication could not be completed. Check Supabase redirect URLs and try again.');
+      if (reason?.toLowerCase().includes('unable to exchange')) {
+        setMessage(
+          'OAuth redirect URL mismatch. In your Supabase dashboard → Authentication → URL Configuration, add ' +
+          `${window.location.origin}/auth/callback` +
+          ' to the allowed redirect URLs list, then try again.'
+        );
+      } else {
+        setMessage(
+          reason
+            ? `Authentication failed: ${reason}`
+            : 'Authentication could not be completed. Check Supabase redirect URLs and try again.'
+        );
+      }
     }
   }, []);
 
