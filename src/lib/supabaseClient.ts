@@ -193,13 +193,15 @@ class DjangoAuthClient {
     return { data: { user: null, session: null, email: _email }, error: null };
   }
 
-  async resetPasswordForEmail(email: string): Promise<{ data: unknown; error: { message: string } | null }> {
+  async resetPasswordForEmail(email: string, options?: unknown): Promise<{ data: unknown; error: { message: string } | null }> {
     const _email = email;
-    return { data: { email: _email }, error: null };
+    const _opt = options;
+    return { data: { email: _email, options: _opt }, error: null };
   }
 
-  async signInWithOAuth(): Promise<{ data: unknown; error: { message: string } | null }> {
-    return { data: null, error: null };
+  async signInWithOAuth(options: unknown): Promise<{ data: unknown; error: { message: string } | null }> {
+    const _opt = options;
+    return { data: _opt, error: null };
   }
 }
 
