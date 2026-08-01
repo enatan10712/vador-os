@@ -1,20 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getSupabaseConfig } from './lib/supabaseConfig';
 import { getTenantIdFromHost } from './lib/tenant';
-import { createServerClient } from '@supabase/ssr';
-import type { Database } from './lib/database.types';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 100;
 const rateLimitBuckets = new Map<string, number[]>();
 
-const PROTECTED_API_PREFIXES = [
-  '/api/orders',
-  '/api/inventory',
-  '/api/notifications',
-  '/api/locations',
-  '/api/audit',
-];
 const PUBLIC_API_PREFIXES = ['/api/health'];
 const STATE_CHANGING_METHODS = new Set(['POST', 'PATCH', 'DELETE']);
 
@@ -62,7 +52,7 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-tenant-slug', tenantSlug);
 
-  let response = NextResponse.next({ request: { headers: requestHeaders } });
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('x-tenant-slug', tenantSlug);
 
   // ── Auth callback: pass through so the route handler can exchange the code ──
@@ -120,35 +110,7 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Protected API routes need a valid session
-    if (PROTECTED_API_PREFIXES.some((p) => pathname.startsWith(p))) {
-      const { url: supabaseUrl, anonKey } = getSupabaseConfig();
-      const supabase = createServerClient<Database>(supabaseUrl, anonKey, {
-        cookies: {
-          getAll: () => request.cookies.getAll(),
-          setAll: (cookiesToSet) => {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value)
-            );
-            response = NextResponse.next({ request: { headers: requestHeaders } });
-            response.headers.set('x-tenant-slug', tenantSlug);
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
-          },
-        },
-      });
-
-      // Try session cookie first (fast, no network), fall back to getUser for strict validation
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        return NextResponse.json(
-          { data: null, error: 'Unauthorized', meta: {} },
-          { status: 401 }
-        );
-      }
-    }
-
+    // Protected API routes session checks are handled securely in Django backend.
     return response;
   }
 

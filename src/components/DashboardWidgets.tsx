@@ -68,7 +68,7 @@ export function MetricCards() {
     queryKey: ['orders'],
     queryFn: fetchOrders,
     staleTime: 1000 * 20,
-    refetchInterval: 30_000,
+    refetchInterval: 3000, // Near-realtime polling every 3 seconds
     retry: 1,
   });
 
@@ -377,7 +377,7 @@ export function RecentOrdersWidget() {
     queryKey: ['orders'],
     queryFn: fetchOrders,
     staleTime: 1000 * 20,
-    refetchInterval: 30_000,
+    refetchInterval: 3000, // Near-realtime polling every 3 seconds
     retry: 1,
   });
 
@@ -466,7 +466,7 @@ export function InventoryAlertsWidget() {
     queryKey: ['inventory'],
     queryFn: fetchInventory,
     staleTime: 1000 * 20,
-    refetchInterval: 30_000,
+    refetchInterval: 3000, // Near-realtime polling every 3 seconds
     retry: 1,
   });
 

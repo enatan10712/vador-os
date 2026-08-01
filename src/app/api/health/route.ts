@@ -1,5 +1,5 @@
-import { apiResponse } from '../../../lib/response';
+import { forwardToDjango } from '../../../lib/djangoProxy';
 
-export async function GET() {
-  return apiResponse({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
+export async function GET(request: Request) {
+  return forwardToDjango(request, '/api/health/', 'GET');
 }
