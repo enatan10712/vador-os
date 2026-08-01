@@ -1,145 +1,117 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import type { Database } from './lib/database.types';
 import { getSupabaseConfig } from './lib/supabaseConfig';
 import { getTenantIdFromHost } from './lib/tenant';
+import { createServerClient } from '@supabase/ssr';
+import type { Database } from './lib/database.types';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 100;
 const rateLimitBuckets = new Map<string, number[]>();
 
-const PROTECTED_API_PREFIXES = ['/api/orders', '/api/inventory', '/api/notifications', '/api/locations', '/api/audit'];
+const PROTECTED_API_PREFIXES = [
+  '/api/orders',
+  '/api/inventory',
+  '/api/notifications',
+  '/api/locations',
+  '/api/audit',
+];
 const PUBLIC_API_PREFIXES = ['/api/health'];
 const STATE_CHANGING_METHODS = new Set(['POST', 'PATCH', 'DELETE']);
-const PUBLIC_PAGE_PATHS = new Set(['/', '/login', '/signin', '/signup', '/auth/callback', '/reset-password']);
+
+// Pages that don't require authentication — everyone can visit these
+const PUBLIC_PAGE_PATHS = new Set([
+  '/login',
+  '/signin',
+  '/signup',
+  '/reset-password',
+]);
 
 function getClientIp(request: NextRequest) {
   const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0]?.trim() || 'unknown';
-  }
-
+  if (forwardedFor) return forwardedFor.split(',')[0]?.trim() || 'unknown';
   return request.headers.get('x-real-ip') ?? 'unknown';
 }
 
 function rateLimit(ip: string) {
   const now = Date.now();
   const windowStart = now - RATE_LIMIT_WINDOW_MS;
-  const bucket = rateLimitBuckets.get(ip)?.filter((timestamp) => timestamp > windowStart) ?? [];
+  const bucket =
+    rateLimitBuckets.get(ip)?.filter((t) => t > windowStart) ?? [];
 
   if (bucket.length >= RATE_LIMIT_MAX_REQUESTS) {
     const oldest = bucket[0] ?? now;
-    const retryAfterSeconds = Math.max(1, Math.ceil((RATE_LIMIT_WINDOW_MS - (now - oldest)) / 1000));
+    const retryAfterSeconds = Math.max(
+      1,
+      Math.ceil((RATE_LIMIT_WINDOW_MS - (now - oldest)) / 1000)
+    );
     rateLimitBuckets.set(ip, bucket);
-
-    return {
-      limited: true,
-      retryAfterSeconds,
-    };
+    return { limited: true, retryAfterSeconds };
   }
 
   bucket.push(now);
   rateLimitBuckets.set(ip, bucket);
-
   return { limited: false, retryAfterSeconds: 0 };
-}
-
-function isApiPath(pathname: string) {
-  return pathname.startsWith('/api/');
-}
-
-function isProtectedApiPath(pathname: string) {
-  return PROTECTED_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
-
-function isPublicApiPath(pathname: string) {
-  return PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const tenantSlug = getTenantIdFromHost(request.headers.get('host') ?? undefined);
+  const tenantSlug = getTenantIdFromHost(
+    request.headers.get('host') ?? undefined
+  );
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-tenant-slug', tenantSlug);
 
-  // Resolve Supabase config lazily inside the function so Vercel edge runtime
-  // reads env vars at request time, not at module evaluation time.
-  const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSupabaseConfig();
-
-  let response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('x-tenant-slug', tenantSlug);
 
-  const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        // First apply to the request so downstream reads see updated cookies
-        cookiesToSet.forEach(({ name, value }) => {
-          request.cookies.set(name, value);
-        });
-        // Rebuild response preserving request headers, then apply cookies to response
-        response = NextResponse.next({
-          request: {
-            headers: requestHeaders,
-          },
-        });
-        response.headers.set('x-tenant-slug', tenantSlug);
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  // Use getSession() for page routing decisions — it reads cookies locally without
-  // a network round-trip, so it works reliably immediately after the callback sets cookies.
-  // API routes that need strict auth validation use requireAuth() inside the handler.
-  let user = null;
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    user = sessionData.session?.user ?? null;
-  } catch {
-    // Degrade gracefully — treat as unauthenticated
+  // ── Auth callback: pass through so the route handler can exchange the code ──
+  if (pathname.startsWith('/auth/')) {
+    return response;
   }
 
-  if (isApiPath(pathname)) {
-    if (isPublicApiPath(pathname)) {
+  // ── Root redirect ──
+  if (pathname === '/') {
+    const redirect = NextResponse.redirect(
+      new URL('/login', request.url)
+    );
+    redirect.headers.set('x-tenant-slug', tenantSlug);
+    return redirect;
+  }
+
+  // ── API routes ──
+  if (pathname.startsWith('/api/')) {
+    // Public API — no auth needed
+    if (PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p))) {
       return response;
     }
 
+    // Rate limiting
     const ip = getClientIp(request);
     const limit = rateLimit(ip);
-
     if (limit.limited) {
-      const limitedResponse = NextResponse.json(
+      const r = NextResponse.json(
         { data: null, error: 'Too many requests', meta: {} },
         { status: 429 }
       );
-      limitedResponse.headers.set('Retry-After', String(limit.retryAfterSeconds));
-      limitedResponse.headers.set('x-tenant-slug', tenantSlug);
-      return limitedResponse;
+      r.headers.set('Retry-After', String(limit.retryAfterSeconds));
+      r.headers.set('x-tenant-slug', tenantSlug);
+      return r;
     }
 
+    // CSRF — same-origin check for state-changing methods
     if (STATE_CHANGING_METHODS.has(request.method)) {
       const requestedWith = request.headers.get('x-requested-with');
-      const origin = request.headers.get('origin');
-      const referer = request.headers.get('referer');
+      const origin = request.headers.get('origin') ?? '';
+      const referer = request.headers.get('referer') ?? '';
       const host = request.headers.get('host') ?? '';
-      
-      // Allow same-origin requests (browser form submissions and fetch from same domain)
-      // Allow requests with XMLHttpRequest header (explicit API clients)
-      // Block cross-origin POST/PATCH/DELETE that lack both signals
+
       const isSameOrigin =
-        (origin && (origin.includes(host) || origin.startsWith('http://localhost'))) ||
-        (referer && (referer.includes(host) || referer.startsWith('http://localhost')));
-      
+        origin.includes(host) ||
+        origin.startsWith('http://localhost') ||
+        referer.includes(host) ||
+        referer.startsWith('http://localhost');
+
       if (requestedWith !== 'XMLHttpRequest' && !isSameOrigin) {
         return NextResponse.json(
           { data: null, error: 'CSRF validation failed', meta: {} },
@@ -148,35 +120,50 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    if (isProtectedApiPath(pathname) && !user) {
-      return NextResponse.json(
-        { data: null, error: 'Unauthorized', meta: {} },
-        { status: 401 }
-      );
+    // Protected API routes need a valid session
+    if (PROTECTED_API_PREFIXES.some((p) => pathname.startsWith(p))) {
+      const { url: supabaseUrl, anonKey } = getSupabaseConfig();
+      const supabase = createServerClient<Database>(supabaseUrl, anonKey, {
+        cookies: {
+          getAll: () => request.cookies.getAll(),
+          setAll: (cookiesToSet) => {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            response = NextResponse.next({ request: { headers: requestHeaders } });
+            response.headers.set('x-tenant-slug', tenantSlug);
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            );
+          },
+        },
+      });
+
+      // Try session cookie first (fast, no network), fall back to getUser for strict validation
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        return NextResponse.json(
+          { data: null, error: 'Unauthorized', meta: {} },
+          { status: 401 }
+        );
+      }
     }
 
     return response;
   }
 
-  if (pathname === '/') {
-    const destination = user ? '/dashboard' : '/login';
-    const redirect = NextResponse.redirect(new URL(destination, request.url));
-    redirect.headers.set('x-tenant-slug', tenantSlug);
-    response.cookies.getAll().forEach((cookie) => {
-      redirect.cookies.set(cookie.name, cookie.value);
-    });
-    return redirect;
+  // ── Page routes ──
+  // Public pages: just pass through
+  if (PUBLIC_PAGE_PATHS.has(pathname)) {
+    return response;
   }
 
-  if (!user && !PUBLIC_PAGE_PATHS.has(pathname)) {
-    const redirect = NextResponse.redirect(new URL('/login', request.url));
-    redirect.headers.set('x-tenant-slug', tenantSlug);
-    return redirect;
-  }
-
+  // All other pages: pass through and let the client-side DashboardGuard handle auth.
+  // This avoids the asymmetric JWT verification issue in middleware where getSession()
+  // can return null immediately after the OAuth callback even with a valid cookie.
   return response;
 }
 
 export const config = {
-  matcher: ['/((?!favicon.ico|_next|static).*)'],
+  matcher: ['/((?!favicon.ico|_next|static|.*\\..*).*)'],
 };
