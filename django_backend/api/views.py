@@ -17,11 +17,12 @@ from api.models import (
     InventoryItem, InventoryTransaction, Order, OrderItem,
     AuditLog, Notification, get_current_restaurant, set_current_restaurant
 )
+from api.analytics import calculate_all_metrics
+from api.ai_assistant import generate_ai_recommendations
+from api.sync_and_alerts import compute_real_time_alerts, process_offline_sync
 
 # HELPER: Get active user from cryptographic session (request.user)
 def get_user_from_request(request):
-    # Standard request.user if authenticated.
-    # Completely removed X-User-ID header fallback to prevent any identity spoofing vulnerabilities.
     if request.user.is_authenticated:
         return request.user
     return None
@@ -44,12 +45,14 @@ def get_user_role(user, restaurant):
 def register_view(request):
     """
     Signs up a new user, automatically creating a Staff or CustomerProfile.
+    Supports all 9 roles: owner, admin, manager, chef, kitchen_staff, storekeeper,
+    cashier, purchasing_officer, auditor, administrator, and customer.
     """
     email = request.data.get('email')
     password = request.data.get('password')
     full_name = request.data.get('full_name', '')
     phone = request.data.get('phone', '')
-    role = request.data.get('role', 'customer')  # default is customer
+    role = request.data.get('role', 'customer')
     restaurant_slug = request.data.get('restaurant_slug')
 
     if not email or not password:
@@ -71,7 +74,7 @@ def register_view(request):
             try:
                 restaurant = Restaurant.objects.get(slug=restaurant_slug)
             except Restaurant.DoesNotExist:
-                return Response({'error': 'Restaurant not found.'}, status=status.HTTP_404_NOT_FOUND)
+                return Response({'error': 'Restaurant not found.'}, status=status.HTTP_444_NOT_FOUND)
 
             RestaurantStaff.objects.create(
                 restaurant=restaurant,
@@ -167,19 +170,18 @@ def orders_list_create(request):
     if not restaurant:
         return Response({'error': 'Restaurant/Tenant context is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check RBAC
     role = get_user_role(user, restaurant)
 
     if request.method == 'GET':
-        # Admin, Manager, Cashier, Kitchen, Waiter can read orders
-        allowed = {'admin', 'manager', 'cashier', 'kitchen', 'waiter', 'owner', 'chef', 'kitchen_staff'}
+        # Roles with read access: Owner, Admin, Manager, Chef, Kitchen Staff, Cashier, Waiter, Auditor
+        allowed = {
+            'owner', 'admin', 'manager', 'chef', 'kitchen_staff', 'kitchen', 'cashier', 'waiter', 'auditor', 'administrator'
+        }
         if role != 'customer' and role not in allowed:
             return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Let's retrieve orders isolated to this restaurant
         orders = Order.objects.filter(restaurant=restaurant).order_by('-created_at')
         if role == 'customer':
-            # Customers only see their own orders
             orders = orders.filter(customer=user)
 
         data = []
@@ -205,39 +207,35 @@ def orders_list_create(request):
         return Response({'data': data})
 
     elif request.method == 'POST':
-        # Create Order
-        allowed_write = {'admin', 'manager', 'cashier', 'waiter', 'customer', 'owner'}
+        # Roles with write access: Owner, Admin, Manager, Cashier, Waiter, Customer
+        allowed_write = {'owner', 'admin', 'manager', 'cashier', 'waiter', 'customer', 'administrator'}
         if role not in allowed_write:
             return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         table_number = request.data.get('table_number')
         items_data = request.data.get('items', [])
-        notes = request.data.get('notes', '')
 
         if not items_data:
             return Response({'error': 'Order must contain items.'}, status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
-            # 1. Lock inventory rows first to prevent race condition & guarantee atomicity
+            # 1. Lock inventory rows first to prevent race condition
             inventory_updates = []
             for item in items_data:
                 menu_item_id = item.get('product_id')
                 qty = int(item.get('quantity', 1))
 
-                # Find the linked Menu Item
                 try:
                     menu_item = MenuItem.objects.get(id=menu_item_id, restaurant=restaurant)
                 except MenuItem.DoesNotExist:
                     return Response({'error': f'Menu item {menu_item_id} not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Find if any inventory items match (for simplicity we can map by menu item name or SKU)
                 try:
                     inv_item = InventoryItem.objects.select_for_update().get(name=menu_item.name, restaurant=restaurant)
                     if inv_item.quantity_on_hand < qty:
                         return Response({'error': f'insufficient_stock: {inv_item.name}'}, status=status.HTTP_400_BAD_REQUEST)
                     inventory_updates.append((inv_item, qty))
                 except InventoryItem.DoesNotExist:
-                    # If item has no linked inventory item, bypass deduction
                     pass
 
             # 2. Perform atomic deductions
@@ -245,7 +243,6 @@ def orders_list_create(request):
                 inv_item.quantity_on_hand = F('quantity_on_hand') - qty
                 inv_item.save()
 
-                # Log transaction
                 InventoryTransaction.objects.create(
                     restaurant=restaurant,
                     inventory_item=inv_item,
@@ -331,15 +328,16 @@ def inventory_list_update(request):
     role = get_user_role(user, restaurant)
 
     if request.method == 'GET':
-        # Admin, Manager, Storekeeper, Cashier, Kitchen can read inventory
-        allowed = {'admin', 'manager', 'cashier', 'kitchen', 'waiter', 'owner', 'chef', 'kitchen_staff', 'storekeeper', 'purchasing_officer'}
+        # Roles with read access: Owner, Admin, Manager, Chef, Kitchen Staff, Storekeeper, Cashier, Purchasing Officer, Auditor
+        allowed = {
+            'owner', 'admin', 'manager', 'chef', 'kitchen_staff', 'kitchen', 'storekeeper', 'cashier', 'purchasing_officer', 'auditor', 'administrator'
+        }
         if role not in allowed:
             return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         items = InventoryItem.objects.filter(restaurant=restaurant).order_by('name')
         data = []
         for item in items:
-            # Determine threshold status
             status_str = 'in_stock'
             if item.quantity_on_hand <= 0:
                 status_str = 'out_of_stock'
@@ -360,8 +358,8 @@ def inventory_list_update(request):
         return Response({'data': data})
 
     elif request.method == 'PATCH':
-        # Manager, Admin, Storekeeper can write
-        allowed_write = {'admin', 'manager', 'owner', 'storekeeper', 'purchasing_officer'}
+        # Roles with write access: Owner, Admin, Manager, Storekeeper, Purchasing Officer, Administrator
+        allowed_write = {'owner', 'admin', 'manager', 'storekeeper', 'purchasing_officer', 'administrator'}
         if role not in allowed_write:
             return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -372,13 +370,11 @@ def inventory_list_update(request):
             return Response({'error': 'item_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
-            # Locked select for atomic safety! (Requirement 4)
             try:
                 item = InventoryItem.objects.select_for_update().get(id=item_id, restaurant=restaurant)
             except InventoryItem.DoesNotExist:
                 return Response({'error': 'Inventory item not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Prevent negative inventory
             next_qty = float(item.quantity_on_hand) + quantity_delta
             if next_qty < 0:
                 return Response({'error': 'insufficient_stock'}, status=status.HTTP_400_BAD_REQUEST)
@@ -386,7 +382,6 @@ def inventory_list_update(request):
             item.quantity_on_hand = Decimal(str(next_qty))
             item.save()
 
-            # Record transaction
             reason = 'adjustment' if quantity_delta >= 0 else 'waste'
             InventoryTransaction.objects.create(
                 restaurant=restaurant,
@@ -396,7 +391,6 @@ def inventory_list_update(request):
                 created_by=user
             )
 
-            # Audit log
             AuditLog.objects.create(
                 restaurant=restaurant,
                 actor=user,
@@ -407,14 +401,12 @@ def inventory_list_update(request):
                 after={'quantity': float(item.quantity_on_hand)}
             )
 
-            # Determine status alert
             status_str = 'in_stock'
             if item.quantity_on_hand <= 0:
                 status_str = 'out_of_stock'
             elif item.quantity_on_hand <= item.reorder_threshold:
                 status_str = 'low_stock'
 
-            # Notify of threshold/out of stock
             if status_str != 'in_stock':
                 Notification.objects.create(
                     restaurant=restaurant,
@@ -474,7 +466,9 @@ def audit_list(request):
         return Response({'error': 'Restaurant context is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
     role = get_user_role(user, restaurant)
-    if role not in {'admin', 'manager', 'owner', 'auditor', 'administrator'}:
+    # Auditor roles: Owner, Admin, Manager, Auditor, Administrator
+    allowed = {'owner', 'admin', 'manager', 'auditor', 'administrator'}
+    if role not in allowed:
         return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
     logs = AuditLog.objects.filter(restaurant=restaurant).order_by('-created_at')[:100]
@@ -490,112 +484,70 @@ def audit_list(request):
     return Response({'data': data})
 
 
-# ─── ANALYTICS ENDPOINT ──────────────────────────────────────────────────────
+# ─── OFFLINE SYNC ENDPOINT ───────────────────────────────────────────────────
 
-@api_view(['GET'])
-def analytics_dashboard(request):
+@api_view(['POST'])
+def offline_sync_view(request):
+    """
+    Endpoint for secure, atomic Offline Mode synchronization.
+    Reconciles queued orders and adjustments, preventing double-deductions.
+    """
+    user = get_user_from_request(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
     restaurant = getattr(request, 'restaurant', None)
     if not restaurant:
         return Response({'error': 'Restaurant context is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Calculate real totals based on active tenant's inventory & orders
-    total_inventory_value = float(InventoryItem.objects.filter(restaurant=restaurant).aggregate(
-        val=Sum(F('quantity_on_hand') * 5.50)  # mock multiplier for value
-    )['val'] or 0.0)
+    role = get_user_role(user, restaurant)
+    allowed = {'owner', 'admin', 'manager', 'cashier', 'waiter', 'storekeeper', 'administrator'}
+    if role not in allowed:
+        return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-    total_sales = float(Order.objects.filter(restaurant=restaurant, status='completed').aggregate(
-        total_sales=Sum('total')
-    )['total_sales'] or 0.0)
+    results = process_offline_sync(restaurant, user, request.data)
+    return Response(results)
 
-    # Let's populate the metrics beautifully
-    data = {
-        'inventory_value': total_inventory_value,
-        'food_cost_percentage': 28.4,
-        'daily_consumption': 120.5,
-        'monthly_consumption': 3820.0,
-        'supplier_performance': 96.2,
-        'purchase_trends': [1500.0, 1800.0, 1200.0, 2200.0, 1900.0],
-        'waste_trends': [50.0, 45.0, 70.0, 30.0, 42.0],
-        'inventory_turnover': 8.4,
-        'recipe_cost': 4.25,
-        'gross_margin': 71.6,
-        'best_selling_dishes': [
-            {'name': 'Prime Ribeye', 'sales': 420},
-            {'name': 'Spicy Tuna Roll', 'sales': 380},
-            {'name': 'Classic Mac & Cheese', 'sales': 310}
-        ],
-        'least_selling_dishes': [
-            {'name': 'Cold Tofu Salad', 'sales': 12},
-            {'name': 'Pickled Okra', 'sales': 5}
-        ],
-        'coffee_analytics': {
-            'espresso_shots': 1420,
-            'milk_used_liters': 320,
-            'beans_consumed_kg': 42.5
-        },
-        'profit_analysis': {
-            'gross_profit': total_sales * 0.71,
-            'net_profit': total_sales * 0.22,
-            'total_revenue': total_sales
-        },
-        'location_comparison': [
-            {'name': 'Downtown (Main)', 'revenue': total_sales},
-            {'name': 'Uptown', 'revenue': total_sales * 0.65}
-        ]
-    }
 
-    return Response({'data': data})
+# ─── ANALYTICS ENDPOINT ──────────────────────────────────────────────────────
+
+@api_view(['GET'])
+def analytics_dashboard(request):
+    user = get_user_from_request(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    restaurant = getattr(request, 'restaurant', None)
+    if not restaurant:
+        return Response({'error': 'Restaurant context is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    role = get_user_role(user, restaurant)
+    allowed = {'owner', 'admin', 'manager', 'auditor', 'administrator'}
+    if role not in allowed:
+        return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+    metrics = calculate_all_metrics(restaurant)
+    return Response({'data': metrics})
 
 
 # ─── AI ASSISTANT ENDPOINT ───────────────────────────────────────────────────
 
 @api_view(['GET'])
 def ai_assistant_recommendations(request):
+    user = get_user_from_request(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
     restaurant = getattr(request, 'restaurant', None)
     if not restaurant:
         return Response({'error': 'Restaurant context is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Generate smart, context-aware AI recommendations
-    low_stock_items = InventoryItem.objects.filter(
-        restaurant=restaurant,
-        quantity_on_hand__lte=F('reorder_threshold')
-    )
+    role = get_user_role(user, restaurant)
+    allowed = {'owner', 'admin', 'manager', 'chef', 'storekeeper', 'purchasing_officer', 'administrator'}
+    if role not in allowed:
+        return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-    reorder_list = []
-    for item in low_stock_items:
-        reorder_list.append(f"Reorder {item.name}: Current stock is {float(item.quantity_on_hand)} {item.unit}, which is below threshold {float(item.reorder_threshold)}.")
-
-    recommendations = []
-    if reorder_list:
-        recommendations.append({
-            'title': 'Reorder Ingredients',
-            'detail': "\n".join(reorder_list),
-            'priority': 'high'
-        })
-
-    recommendations.extend([
-        {
-            'title': 'Reduce Waste',
-            'detail': 'Our waste log shows an increase in organic food waste on Wednesdays. Recommend reducing prep of perishables by 15% on mid-week days.',
-            'priority': 'medium'
-        },
-        {
-            'title': 'Predict High Demand',
-            'detail': 'Local concert event nearby on Friday. Expect a 25% increase in burger and beverage orders between 6 PM - 9 PM.',
-            'priority': 'high'
-        },
-        {
-            'title': 'Suggest Bulk Purchases',
-            'detail': 'Coffee bean prices are projected to rise next month by 12%. Suggest bulk purchasing a 3-month supply now to lock in savings.',
-            'priority': 'medium'
-        },
-        {
-            'title': 'Detect Slow Moving Stock',
-            'detail': 'Truffle oil has had zero consumption over the past 45 days. Consider introducing a special menu item to use the stock before expiry.',
-            'priority': 'low'
-        }
-    ])
-
+    recommendations = generate_ai_recommendations(restaurant)
     return Response({'recommendations': recommendations})
 
 
@@ -603,45 +555,15 @@ def ai_assistant_recommendations(request):
 
 @api_view(['GET'])
 def real_time_alerts(request):
+    user = get_user_from_request(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
     restaurant = getattr(request, 'restaurant', None)
     if not restaurant:
         return Response({'error': 'Restaurant context is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Find out-of-stock or low-stock items
-    items = InventoryItem.objects.filter(restaurant=restaurant)
-    alerts = []
-
-    for item in items:
-        if item.quantity_on_hand <= 0:
-            alerts.append({
-                'type': 'out_of_stock',
-                'item_name': item.name,
-                'severity': 'critical',
-                'message': f"{item.name} is completely out of stock!"
-            })
-        elif item.quantity_on_hand <= item.reorder_threshold:
-            alerts.append({
-                'type': 'low_stock',
-                'item_name': item.name,
-                'severity': 'warning',
-                'message': f"{item.name} is running low ({float(item.quantity_on_hand)} {item.unit} left)."
-            })
-
-    # High Waste alert if any recent transactions are waste with a large delta
-    recent_waste = InventoryTransaction.objects.filter(
-        restaurant=restaurant,
-        reason='waste',
-        created_at__gte=timezone.now() - timezone.timedelta(days=7)
-    )
-    if recent_waste.exists():
-        total_waste = float(recent_waste.aggregate(s=Sum('delta'))['s'] or 0.0)
-        if abs(total_waste) > 50:
-            alerts.append({
-                'type': 'high_waste',
-                'severity': 'critical',
-                'message': f"Abnormal high waste detected this week: {abs(total_waste)} units wasted."
-            })
-
+    alerts = compute_real_time_alerts(restaurant)
     return Response({'alerts': alerts})
 
 
@@ -662,6 +584,10 @@ def locations_list_create(request):
         return Response({'data': data})
 
     elif request.method == 'POST':
+        user = get_user_from_request(request)
+        if not user or not user.is_staff:
+            return Response({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
         name = request.data.get('name')
         slug = request.data.get('slug')
         subscription_tier = request.data.get('subscription_tier', 'trial')

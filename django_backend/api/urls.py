@@ -11,6 +11,7 @@ urlpatterns = [
     path('inventory/', views.inventory_list_update, name='inventory'),
     path('notifications/', views.notifications_list, name='notifications'),
     path('audit/', views.audit_list, name='audit'),
+    path('sync/', views.offline_sync_view, name='offline_sync'),
     path('analytics/', views.analytics_dashboard, name='analytics'),
     path('ai/recommendations/', views.ai_assistant_recommendations, name='ai_recommendations'),
     path('alerts/', views.real_time_alerts, name='alerts'),
