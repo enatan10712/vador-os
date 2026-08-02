@@ -23,6 +23,13 @@ The system features an enterprise-grade separated architecture:
 - **Immutable Audit Logging**: System actions are saved in an immutable ledger (updates and deletions are strictly blocked at the database model layer).
 - **Near-Realtime KDS & POS**: Automatic UI status updates via optimized React Query polling (refetch interval set to 3s), avoiding complex WebSocket overhead.
 - **Enterprise Analytics & AI Recommendations**: Computes 16 performance metrics and generates 12 smart business recommendations using Django aggregates and historical trends.
+- **Enterprise Supply Chain Suite (2026)**:
+  - **Ingredient Management**: Comprehensive inventory details including SKUs, barcodes, QR codes, storage specs (shelf/bin/rack), par levels, and supplier links.
+  - **Advanced Purchase Order Lifecycle**: Draft -> Submitted -> Approved -> Ordered -> Partially Received -> Received with automated weighted average costing and batch/lot allocation.
+  - **Goods & Recipe Costings**: Plate recipes linking menu items to complex sub-ingredients with waste loss calculations and auto-deduction upon POS sales checkout.
+  - **Stock Transfers & Adjustments**: Inter-location logistics and manual adjustments with strict auditing and approval stages.
+  - **AI supply chain analysis**: Demand forecasting, shrinkage warnings, dead stock prediction, and cost-saving suggests.
+  - **Barcode and Label System**: Scanner lookup matching SKUs/barcodes/QR codes.
 
 ---
 
