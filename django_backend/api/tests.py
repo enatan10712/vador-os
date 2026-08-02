@@ -238,3 +238,130 @@ class EnterpriseInventoryTests(TestCase):
 
         self.assertEqual(self.beans.quantity_on_hand, Decimal('49.9720'))
         self.assertEqual(self.milk.quantity_on_hand, Decimal('99.8000'))
+
+
+class EnterpriseServiceLayerAndAIQueryTests(TestCase):
+    """
+    Tests covering POSTransactionService, InventoryManagementService,
+    AINaturalLanguageService, and AI query views.
+    """
+    def setUp(self):
+        self.restaurant = Restaurant.objects.create(name="Sidama Roasters", slug="sidama-roasters")
+        set_current_restaurant(self.restaurant)
+
+        self.user = User.objects.create_user(username="test_manager", password="password")
+
+        self.item = InventoryItem.objects.create(
+            restaurant=self.restaurant,
+            name="Harar Coffee Beans",
+            unit="kg",
+            quantity_on_hand=Decimal('100.00'),
+            reorder_threshold=Decimal('10.00'),
+            average_cost=Decimal('50.00'),
+            weighted_average_cost=Decimal('50.00')
+        )
+
+        self.espresso = MenuItem.objects.create(
+            restaurant=self.restaurant,
+            name="Harar Espresso",
+            price=Decimal('120.00')
+        )
+
+        # Create Recipe for Harar Espresso using 1kg of beans (massive for testing UOM deduction easily)
+        self.recipe = Recipe.objects.create(
+            restaurant=self.restaurant,
+            menu_item=self.espresso,
+            preparation_yield=Decimal('1.0'),
+            cost_per_portion=Decimal('50.00')
+        )
+
+        RecipeIngredient.objects.create(
+            restaurant=self.restaurant,
+            recipe=self.recipe,
+            inventory_item=self.item,
+            quantity=Decimal('1.00'),
+            unit="kg"
+        )
+
+    def test_pos_transaction_service_checkout(self):
+        # Checkout 5 espressos atomically
+        from api.services import POSTransactionService
+        order = POSTransactionService.process_pos_checkout(
+            restaurant=self.restaurant,
+            user=self.user,
+            table_number="Table 5",
+            items=[{
+                'product_id': str(self.espresso.id),
+                'quantity': 5
+            }],
+            payment_currency="ETB",
+            tax_type="VAT"
+        )
+
+        # Grand total: (120 * 5) + 15% VAT = 600 + 90 = 690 ETB
+        self.assertEqual(order.total, Decimal('690.00'))
+        self.assertEqual(order.status, 'completed')
+
+        # Verify inventory has been deducted
+        self.item.refresh_from_db()
+        # 100kg - (1kg * 5) = 95kg
+        self.assertEqual(self.item.quantity_on_hand, Decimal('95.00'))
+
+    def test_inventory_management_service_adjust(self):
+        from api.services import InventoryManagementService
+        # Add 25 kg
+        updated_item = InventoryManagementService.adjust_stock(
+            restaurant=self.restaurant,
+            user=self.user,
+            item_id=self.item.id,
+            quantity_delta=Decimal('25.00'),
+            reason='purchase',
+            notes='Received premium batch'
+        )
+
+        self.assertEqual(updated_item.quantity_on_hand, Decimal('125.00'))
+
+    def test_ai_natural_language_service_revenue_query(self):
+        from api.services import AINaturalLanguageService
+        # Add some completed order
+        from api.models import Order
+        Order.objects.create(
+            restaurant=self.restaurant,
+            customer=self.user,
+            table_number="4",
+            status='completed',
+            total=Decimal('450.50')
+        )
+
+        ans = AINaturalLanguageService.answer_query(self.restaurant, "Show today's revenue")
+        self.assertIn("450.50", ans)
+        self.assertIn("Sidama Roasters", ans)
+
+    def test_ai_natural_language_service_low_stock_query(self):
+        from api.services import AINaturalLanguageService
+        # Set stock below threshold
+        self.item.quantity_on_hand = Decimal('5.00')
+        self.item.save()
+
+        ans = AINaturalLanguageService.answer_query(self.restaurant, "what is running low?")
+        self.assertIn("Harar Coffee Beans", ans)
+
+    def test_ai_natural_language_service_profit_query(self):
+        from api.services import AINaturalLanguageService
+        ans = AINaturalLanguageService.answer_query(self.restaurant, "highest profit dishes")
+        self.assertIn("Harar Espresso", ans)
+        self.assertIn("120.00", ans)
+
+    def test_ai_query_view_endpoint(self):
+        from django.test import RequestFactory
+        from api.views import ai_query_view
+        factory = RequestFactory()
+
+        request = factory.post('/api/ai/query/', data={'query': "What is the revenue?"}, content_type='application/json')
+        request.user = self.user
+        request.restaurant = self.restaurant
+        request._dont_enforce_csrf_checks = True
+
+        response = ai_query_view(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('answer', response.data)

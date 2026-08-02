@@ -232,6 +232,27 @@ def session_view(request):
 
 # ─── ORDERS ENDPOINTS (RE-ENGINEERED WITH RECIPE DECURSIONS) ───────────────
 
+@api_view(['GET'])
+def menu_items_list(request):
+    user = get_user_from_request(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    restaurant = getattr(request, 'restaurant', None)
+    if not restaurant:
+        return Response({'error': 'Restaurant context is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    items = MenuItem.objects.filter(restaurant=restaurant, is_available=True)
+    data = [{
+        'id': str(item.id),
+        'name': item.name,
+        'price': float(item.price),
+        'category': item.category
+    } for item in items]
+
+    return Response({'data': data})
+
+
 @api_view(['GET', 'POST'])
 def orders_list_create(request):
     user = get_user_from_request(request)
@@ -1457,6 +1478,22 @@ def ai_assistant_recommendations(request):
 
     recommendations = generate_ai_recommendations(restaurant)
     return Response({'recommendations': recommendations})
+
+
+@api_view(['POST'])
+def ai_query_view(request):
+    user = get_user_from_request(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    restaurant = getattr(request, 'restaurant', None)
+    if not restaurant:
+        return Response({'error': 'Restaurant context is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    query_str = request.data.get('query', '')
+    from api.services import AINaturalLanguageService
+    answer = AINaturalLanguageService.answer_query(restaurant, query_str)
+    return Response({'answer': answer})
 
 
 # ─── ALERTS ENDPOINT ─────────────────────────────────────────────────────────

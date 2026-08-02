@@ -1,0 +1,30 @@
+
+> temp-app@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.5.22 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Compiled middleware in 409ms
+ ✓ Ready in 2.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 11.8s
+ HEAD / 200 in 13098ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1384ms
+ GET /login 200 in 1784ms
+ ○ Compiling /api/auth/session ...
+ ✓ Compiled /api/auth/session in 590ms
+ GET /api/auth/session 200 in 1073ms
+ HEAD /login 200 in 157ms
+ GET /login 200 in 174ms
+ GET /api/auth/session 200 in 286ms
+ GET /login 200 in 252ms
+ GET /api/auth/session 200 in 279ms
