@@ -8,6 +8,7 @@ urlpatterns = [
     path('auth/session/', views.session_view, name='session'),
 
     path('orders/', views.orders_list_create, name='orders'),
+    path('menu-items/', views.menu_items_list, name='menu_items_list'),
     path('inventory/', views.inventory_list_update, name='inventory'),
     path('inventory/import/', views.inventory_import_csv, name='inventory_import'),
     path('inventory/export/', views.inventory_export_csv, name='inventory_export'),
@@ -33,6 +34,7 @@ urlpatterns = [
     path('sync/', views.offline_sync_view, name='offline_sync'),
     path('analytics/', views.analytics_dashboard, name='analytics'),
     path('ai/recommendations/', views.ai_assistant_recommendations, name='ai_recommendations'),
+    path('ai/query/', views.ai_query_view, name='ai_query'),
     path('alerts/', views.real_time_alerts, name='alerts'),
     path('locations/', views.locations_list_create, name='locations'),
     path('health/', views.health_check, name='health'),
