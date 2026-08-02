@@ -1,43 +1,41 @@
 import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from './database.types';
 import { getTenantIdFromHost } from './tenant';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-key';
 
 export type { UserRole } from './auth-utils';
 export { hasRoleAccess, resolvePostLoginRoute, ROLE_HIERARCHY } from './auth-utils';
 
-export async function createServerSupabase() {
-  const cookieStore = await cookies();
-
-  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
+async function getDjangoSession(cookieHeader: string, tenantSlug: string) {
+  const DJANGO_BACKEND_URL = process.env.DJANGO_BACKEND_URL ?? 'http://127.0.0.1:8000';
+  try {
+    const res = await fetch(`${DJANGO_BACKEND_URL}/api/auth/session/`, {
+      method: 'GET',
+      headers: {
+        'Cookie': cookieHeader,
+        'X-Tenant-Slug': tenantSlug,
+        'Content-Type': 'application/json',
       },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        } catch {
-          // Route handlers can run in read-only contexts during rendering.
-        }
-      },
-    },
-  });
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.session || null;
+    }
+  } catch (err) {
+    console.error('Error fetching Django session:', err);
+  }
+  return null;
 }
 
 export async function requireAuth() {
-  const supabase = await createServerSupabase();
-  const { data: sessionData, error } = await supabase.auth.getSession();
-  if (error || !sessionData?.session) {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; ');
+  const tenantSlug = 'robusta-coffee'; // fallback
+  const session = await getDjangoSession(cookieHeader, tenantSlug);
+
+  if (!session) {
     throw new Response('Unauthorized', { status: 401 });
   }
 
-  return { supabase, session: sessionData.session };
+  return { session };
 }
 
 export function resolveTenantSlugFromHost(host?: string) {
