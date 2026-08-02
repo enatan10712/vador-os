@@ -260,7 +260,7 @@ class AINaturalLanguageService:
         # Fallback response with beautiful AI tone
         else:
             return (
-                f"Hello! I am your Vador OS Copilot. I can query real-time data for **{restaurant.name}**.\n\n"
+                f"Hello! I am your Vendor OS Copilot. I can query real-time data for **{restaurant.name}**.\n\n"
                 "Try asking me things like:\n"
                 "- *'Show today's revenue.'*\n"
                 "- *'What ingredients will finish tomorrow?'*\n"

@@ -119,7 +119,7 @@ class EnterpriseInventoryTests(TestCase):
     Covers UOM conversions, plate costing, automatic recipe deductions, and transfer workflows.
     """
     def setUp(self):
-        self.restaurant = Restaurant.objects.create(name="Vador Bistro", slug="vador-bistro")
+        self.restaurant = Restaurant.objects.create(name="Vendor Bistro", slug="vendor-bistro")
         set_current_restaurant(self.restaurant)
 
         self.supplier = Supplier.objects.create(

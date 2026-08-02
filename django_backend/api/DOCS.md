@@ -1,12 +1,12 @@
-# Vador OS — Enterprise Architectural & Deployment Guide (2026)
+# Vendor OS — Enterprise Architectural & Deployment Guide (2026)
 
-This document details the production-grade, highly scalable, and localized software architecture powering **Vador OS**, the leading cloud-native Restaurant Operating System (ERP) designed for global and East African markets.
+This document details the production-grade, highly scalable, and localized software architecture powering **Vendor OS**, the leading cloud-native Restaurant Operating System (ERP) designed for global and East African markets.
 
 ---
 
 ## 1. Clean Architecture & DDD Separation
 
-Vador OS implements a clean, layered architecture separating business domain entities, persistent database models, and view controllers through a highly cohesive **Service Layer**.
+Vendor OS implements a clean, layered architecture separating business domain entities, persistent database models, and view controllers through a highly cohesive **Service Layer**.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -77,7 +77,7 @@ Below is the structured relational outline of our enterprise Django model graph:
 
 ## 3. Ethiopian Localization & Tax Compliance
 
-Vador OS is fully adapted to the fiscal regulatory requirements of Ethiopia and East African commerce:
+Vendor OS is fully adapted to the fiscal regulatory requirements of Ethiopia and East African commerce:
 
 ### 1. Unified Tax Invoicing
 - **Value Added Tax (VAT)**: Configurable standard rate of **15%** computed dynamically upon checkout.
@@ -105,7 +105,7 @@ Vador OS is fully adapted to the fiscal regulatory requirements of Ethiopia and 
 
 ## 5. Security Architecture Matrix
 
-Vador OS implements robust defenses matching modern security standards:
+Vendor OS implements robust defenses matching modern security standards:
 1. **OWASP Top 10 Mitigation**: Enforced CSRF tokens, strict Django SQL injection parameterized queries, and safe XSS output escaping.
 2. **Immutable Audit Ledger**: Overridden `save()` and `delete()` methods on `AuditLog` models prevent modification or deletion of sensitive event records, assuring non-repudiation.
 3. **Brute Force Protection**: Optional rate-limiting middlewares protect key endpoints (such as `/api/auth/login/`) from automated dictionary attacks.
@@ -125,7 +125,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: gunicorn vador_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    command: gunicorn vendor_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3
     env_file: .env
     ports:
       - "8000:8000"
@@ -140,8 +140,8 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: vador_db
-      POSTGRES_USER: vador_user
+      POSTGRES_DB: vendor_db
+      POSTGRES_USER: vendor_user
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data

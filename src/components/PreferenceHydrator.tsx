@@ -4,9 +4,9 @@ import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
 
 const STORAGE_KEYS = {
-  theme: 'vador_theme',
-  locale: 'vador_preferred_locale',
-  workspace: 'vador_active_workspace',
+  theme: 'vendor_theme',
+  locale: 'vendor_preferred_locale',
+  workspace: 'vendor_active_workspace',
 } as const;
 
 export default function PreferenceHydrator() {

@@ -113,7 +113,7 @@ export const inventoryAlerts: InventoryAlert[] = [
   { id: 'ia1', item: 'Single Origin Ethiopia Yirgacheffe Beans', current: '4.2', required: '10.0', unit: 'kg', status: 'critical' },
   { id: 'ia2', item: 'Oat Milk (Barista Edition)', current: '15', required: '50', unit: 'Liters', status: 'warning' },
   { id: 'ia3', item: 'Organic Honey & Spiced Sauces', current: '1.2', required: '5.0', unit: 'kg', status: 'critical' },
-  { id: 'ia4', item: 'Vador Recyclable Hot Cups (12oz)', current: '450', required: '2000', unit: 'Units', status: 'warning' },
+  { id: 'ia4', item: 'Vendor Recyclable Hot Cups (12oz)', current: '450', required: '2000', unit: 'Units', status: 'warning' },
 ];
 
 export const aiInsights = [
@@ -127,14 +127,14 @@ export const aiInsights = [
   {
     id: 'ai2',
     title: 'Spiced Teff Butter Croissants Strategy',
-    description: 'Baking limits are outstripped by local demand. Vador AI auto-adjusted baking schedules to prioritize morning batches of Teff pastries.',
+    description: 'Baking limits are outstripped by local demand. Vendor AI auto-adjusted baking schedules to prioritize morning batches of Teff pastries.',
     impact: '+8,500 ብር weekly profit',
     confidence: '92%'
   },
   {
     id: 'ai3',
     title: 'Sidama/Yirgacheffe Roasting Automation',
-    description: 'Fresh bean stock suggests full depletion in 48 hours. Vador AI prepared a draft CBE Birr payment purchase order with Sidama farming partners.',
+    description: 'Fresh bean stock suggests full depletion in 48 hours. Vendor AI prepared a draft CBE Birr payment purchase order with Sidama farming partners.',
     impact: 'Avoid Out-of-Stock cost',
     confidence: '99%'
   }

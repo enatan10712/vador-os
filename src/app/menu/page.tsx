@@ -41,8 +41,8 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   {
     id: 'p1',
-    name: 'Vador Signature Nitro Cold Brew',
-    nameAm: 'የቫዶር ልዩ ናይትሮ ቀዝቃዛ ቡና',
+    name: 'Vendor Signature Nitro Cold Brew',
+    nameAm: 'የቬንዶር ልዩ ናይትሮ ቀዝቃዛ ቡና',
     price: 180.00,
     category: 'Signatures',
     categoryAm: 'የተለዩ መጠጦች',
@@ -101,8 +101,8 @@ const MENU_ITEMS: MenuItem[] = [
     description: 'Twice-baked buttery, flaky 24-layer croissant filled with rich Sicilian pistachio frangipane, topped with chopped roasted pistachios.',
     descriptionAm: 'በጥንቃቄ የተጋገረ ቅቤ የበዛበት ክሮይሰንት በውስጡ ጣፋጭ የፒስታቺዮ ክሬም የያዘ።',
     image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&auto=format&fit=crop&q=80',
-    tags: ['Freshly Baked', 'Vador Treat'],
-    tagsAm: ['ትኩስ መጋገሪያ', 'የቫዶር ልዩ']
+    tags: ['Freshly Baked', 'Vendor Treat'],
+    tagsAm: ['ትኩስ መጋገሪያ', 'የቬንዶር ልዩ']
   },
   {
     id: 'p6',

@@ -101,7 +101,10 @@ class DjangoAuthClient {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ email, password, role: 'customer' })
       });
       const data = await res.json();
@@ -133,7 +136,10 @@ class DjangoAuthClient {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
@@ -163,7 +169,12 @@ class DjangoAuthClient {
 
   async signOut() {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
     } catch {
       // ignore
     }
@@ -174,7 +185,10 @@ class DjangoAuthClient {
     try {
       const res = await fetch('/api/auth/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify({ password })
       });
       if (res.ok) {

@@ -14,7 +14,7 @@ export const translations = {
     systemOperational: 'SYSTEM OPERATIONAL',
     tenantStatus: 'Tenant Status:',
     premiumActive: 'Premium Active',
-    welcomeBack: 'Welcome back to Vador OS, Lead Architect. Here is your enterprise-tier operating system cockpit.',
+    welcomeBack: 'Welcome back to Vendor OS, Lead Architect. Here is your enterprise-tier operating system cockpit.',
     activeWorkspace: 'Active Workspace',
     searchPlaceholder: 'Search transactions, customers, beverages, orders...',
     aiQuickAudit: 'AI Quick Audit',
@@ -45,7 +45,7 @@ export const translations = {
     outOfStock: 'Out of Stock',
 
     // Alerts & Insights
-    aiCopilot: 'VADOR AI COPILOT',
+    aiCopilot: 'VENDOR AI COPILOT',
     insightsCount: '3 Insights',
     inventoryAlertTitle: 'INVENTORY ALERTS',
     restockAction: 'Quick Restock',
@@ -108,7 +108,7 @@ export const translations = {
     payCard: 'Pay with Telebirr',
     payCash: 'Pay with CBE Birr',
     shareExperience: 'Share Experience',
-    helpFineTune: 'Help us fine-tune Vador OS and Robusta Coffee operations.',
+    helpFineTune: 'Help us fine-tune Vendor OS and Robusta Coffee operations.',
     submitReview: 'Submit Luxury Review',
   },
   am: {

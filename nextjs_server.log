@@ -1,30 +1,162 @@
 
 > temp-app@0.1.0 dev
-> next dev --turbopack
+> next dev --turbopack -p 3000
 
    ▲ Next.js 15.5.22 (Turbopack)
    - Local:        http://localhost:3000
    - Network:      http://192.168.0.2:3000
 
  ✓ Starting...
-Attention: Next.js now collects completely anonymous telemetry regarding usage.
-This information is used to shape Next.js' roadmap and prioritize features.
-You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
-https://nextjs.org/telemetry
-
- ✓ Compiled middleware in 409ms
- ✓ Ready in 2.1s
+ ✓ Compiled middleware in 320ms
+ ✓ Ready in 1894ms
  ○ Compiling / ...
- ✓ Compiled / in 11.8s
- HEAD / 200 in 13098ms
- ○ Compiling /login ...
- ✓ Compiled /login in 1384ms
- GET /login 200 in 1784ms
+ ✓ Compiled / in 11.7s
+ GET / 200 in 13100ms
  ○ Compiling /api/auth/session ...
- ✓ Compiled /api/auth/session in 590ms
- GET /api/auth/session 200 in 1073ms
- HEAD /login 200 in 157ms
- GET /login 200 in 174ms
+ ✓ Compiled /api/auth/session in 780ms
+ GET /api/auth/session 500 in 1236ms
+ GET /api/auth/session 500 in 429ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1869ms
+ GET / 200 in 220ms
+ GET /api/auth/session 200 in 301ms
+ GET /login 200 in 196ms
+ GET /api/auth/session 200 in 369ms
+ GET /api/auth/session 200 in 309ms
+ GET /api/auth/session 200 in 303ms
+ GET / 200 in 186ms
+ GET /api/auth/session 200 in 306ms
+ GET /login 200 in 156ms
+ GET /api/auth/session 200 in 353ms
+ GET /api/auth/session 200 in 321ms
+ GET /api/auth/session 200 in 371ms
+ GET / 200 in 209ms
+ GET /api/auth/session 200 in 301ms
+ GET /login 200 in 172ms
+ GET /api/auth/session 200 in 351ms
+ GET /api/auth/session 200 in 297ms
+ GET /api/auth/session 200 in 301ms
+ GET /login 200 in 322ms
+ GET /api/auth/session 200 in 292ms
+ GET / 200 in 833ms
+ GET /api/auth/session 200 in 297ms
+ GET /login 200 in 279ms
+ GET /api/auth/session 200 in 369ms
+ GET /api/auth/session 200 in 313ms
+ GET /api/auth/session 200 in 290ms
+ ✓ Compiled /api/auth/login in 212ms
+ POST /api/auth/login 200 in 1605ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1779ms
+ GET /dashboard 200 in 1944ms
+ GET /dashboard 200 in 137ms
+ GET /api/auth/session 200 in 309ms
+ GET /api/auth/session 200 in 280ms
+ GET /api/auth/session 200 in 292ms
+ GET /api/auth/session 200 in 309ms
+ GET /api/auth/session 200 in 338ms
+ ✓ Compiled /api/inventory in 389ms
+ GET /api/inventory 200 in 778ms
+ GET /api/auth/session 200 in 409ms
+ GET /api/orders 200 in 1001ms
+ GET /api/auth/session 200 in 387ms
+ GET /api/auth/session 200 in 326ms
+ GET / 200 in 221ms
+ GET /api/auth/session 200 in 284ms
+ GET /login 200 in 218ms
+ GET /api/auth/session 200 in 417ms
+ GET /api/auth/session 200 in 295ms
+ GET /api/auth/session 200 in 302ms
+ POST /api/auth/login 200 in 1377ms
+ GET /dashboard 200 in 155ms
+ GET /dashboard 200 in 142ms
+ GET /api/auth/session 200 in 284ms
+ GET /api/auth/session 200 in 292ms
+ GET /api/auth/session 200 in 290ms
+ GET /api/auth/session 200 in 332ms
+ GET /api/inventory 200 in 450ms
+ GET /api/auth/session 200 in 361ms
+ GET /api/orders 200 in 610ms
+ GET /api/auth/session 200 in 362ms
+ GET /api/auth/session 200 in 290ms
+ GET /api/auth/session 200 in 296ms
+ GET / 200 in 797ms
+ GET /api/auth/session 200 in 320ms
+ GET /login 200 in 163ms
+ GET /api/auth/session 200 in 374ms
+ GET /api/auth/session 200 in 300ms
+ GET /api/auth/session 200 in 292ms
+ POST /api/auth/login 200 in 1328ms
+ GET /dashboard 200 in 248ms
+ GET /dashboard 200 in 146ms
+ GET /api/auth/session 200 in 297ms
+ GET /api/auth/session 200 in 299ms
+ GET /api/auth/session 200 in 294ms
+ GET /api/auth/session 200 in 290ms
+ GET /api/inventory 200 in 501ms
+ GET /api/auth/session 200 in 378ms
+ GET /api/orders 200 in 647ms
+ GET /api/auth/session 200 in 322ms
+ GET /api/auth/session 200 in 363ms
+ GET /api/auth/session 200 in 282ms
+ GET / 200 in 189ms
+ GET /api/auth/session 200 in 290ms
+ GET /login 200 in 169ms
+ GET /api/auth/session 200 in 407ms
+ GET /api/auth/session 200 in 275ms
+ GET /api/auth/session 200 in 283ms
+ POST /api/auth/login 200 in 1321ms
+ GET /dashboard 200 in 136ms
+ GET /dashboard 200 in 134ms
+ GET /api/auth/session 200 in 289ms
+ GET /api/auth/session 200 in 291ms
+ GET /api/auth/session 200 in 289ms
  GET /api/auth/session 200 in 286ms
- GET /login 200 in 252ms
- GET /api/auth/session 200 in 279ms
+ GET /api/inventory 200 in 433ms
+ GET /api/auth/session 200 in 400ms
+ GET /api/orders 200 in 601ms
+ GET /api/auth/session 200 in 297ms
+ GET /api/auth/session 200 in 288ms
+ GET /api/auth/session 200 in 301ms
+ GET / 200 in 4627ms
+ GET /api/auth/session 200 in 481ms
+ GET /login 200 in 186ms
+ GET /api/auth/session 200 in 330ms
+ GET /api/auth/session 200 in 302ms
+ GET /api/auth/session 200 in 287ms
+ POST /api/auth/login 200 in 1350ms
+ GET /dashboard 200 in 372ms
+ GET /dashboard 200 in 392ms
+ GET /api/auth/session 200 in 303ms
+ GET /api/auth/session 200 in 299ms
+ GET /api/auth/session 200 in 363ms
+ GET /api/auth/session 200 in 370ms
+ GET /api/inventory 200 in 531ms
+ GET /api/auth/session 200 in 419ms
+ GET /api/orders 200 in 786ms
+ GET /api/auth/session 200 in 358ms
+ GET /api/auth/session 200 in 333ms
+ GET /api/auth/session 200 in 301ms
+ GET /api/inventory 200 in 306ms
+ GET /api/orders 200 in 436ms
+ GET / 200 in 198ms
+ GET /api/auth/session 200 in 300ms
+ GET /login 200 in 175ms
+ GET /api/auth/session 200 in 373ms
+ GET /api/auth/session 200 in 326ms
+ GET /api/auth/session 200 in 287ms
+ POST /api/auth/login 200 in 1260ms
+ GET /dashboard 200 in 141ms
+ GET /dashboard 200 in 168ms
+ GET /api/auth/session 200 in 281ms
+ GET /api/auth/session 200 in 282ms
+ GET /api/auth/session 200 in 281ms
+ GET /api/auth/session 200 in 296ms
+ GET /api/inventory 200 in 447ms
+ GET /api/auth/session 200 in 378ms
+ GET /api/orders 200 in 626ms
+ GET /api/auth/session 200 in 313ms
+ GET /api/auth/session 200 in 319ms
+ GET /api/auth/session 200 in 317ms
+ GET /api/inventory 200 in 282ms
+ GET /api/orders 200 in 418ms

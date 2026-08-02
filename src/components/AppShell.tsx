@@ -33,7 +33,7 @@ export default function AppShell({ children, title, description, badge }: AppShe
     {
       id: 'init',
       sender: 'ai',
-      text: "Hello! I am your Vador OS Co-Pilot. I can query real-time data from your database. What would you like to know today?",
+      text: "Hello! I am your Vendor OS Co-Pilot. I can query real-time data from your database. What would you like to know today?",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -167,7 +167,7 @@ export default function AppShell({ children, title, description, badge }: AppShe
                     <Bot size={16} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-white uppercase tracking-wider">Vador AI Co-Pilot</h4>
+                    <h4 className="text-xs font-black text-white uppercase tracking-wider">Vendor AI Co-Pilot</h4>
                     <p className="text-[9px] text-emerald-400 font-bold flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       Connected to {activeWorkspace}
@@ -248,7 +248,7 @@ export default function AppShell({ children, title, description, badge }: AppShe
                     if (e.key === 'Enter') handleSendMessage(inputText);
                   }}
                   disabled={loadingAi}
-                  placeholder="Ask Vador OS anything..."
+                  placeholder="Ask Vendor OS anything..."
                   className="flex-1 bg-[#181311] text-xs py-2 px-3 rounded-xl border border-[#C5A880]/15 focus:outline-none focus:border-[#C5A880]/50 text-white placeholder-neutral-500"
                 />
                 <button
@@ -270,7 +270,7 @@ export default function AppShell({ children, title, description, badge }: AppShe
           className="flex items-center gap-2 bg-gradient-to-r from-amber-500 via-[#C5A880] to-amber-600 text-black px-4 py-3 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-250 font-black text-xs uppercase tracking-wider"
         >
           <Sparkles size={14} className="animate-pulse" />
-          <span>Vador AI Co-Pilot</span>
+          <span>Vendor AI Co-Pilot</span>
         </button>
 
       </div>

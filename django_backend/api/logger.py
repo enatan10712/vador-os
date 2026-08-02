@@ -13,4 +13,4 @@ def log_structured(action, user_id=None, restaurant_slug=None, details=None):
         'restaurant_slug': restaurant_slug or 'none',
         'details': details or {}
     }
-    print(f"[VADOR_STRUCTURED_LOG] {json.dumps(log_data)}")
+    print(f"[VENDOR_STRUCTURED_LOG] {json.dumps(log_data)}")

@@ -6,7 +6,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import PreferenceHydrator from '../components/PreferenceHydrator';
 
 export const metadata: Metadata = {
-  title: 'Vador OS - Premium Restaurant Operating System',
+  title: 'Vendor OS - Premium Restaurant Operating System',
   description: 'Production-ready enterprise workspace dashboard by Jules Architect.',
 };
 

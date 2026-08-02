@@ -4,7 +4,7 @@ import random
 from decimal import Decimal
 from django.utils import timezone
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vador_backend.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vendor_backend.settings')
 django.setup()
 
 from django.contrib.auth.models import User
@@ -40,11 +40,11 @@ def seed():
 
     # 2. Create Users & Staff Roles for both Restaurants
     staff_emails = [
-        ('admin@vador.com', 'admin'),
-        ('manager@vador.com', 'manager'),
-        ('cashier@vador.com', 'cashier'),
-        ('waiter@vador.com', 'waiter'),
-        ('kitchen@vador.com', 'kitchen'),
+        ('admin@vendor.com', 'admin'),
+        ('manager@vendor.com', 'manager'),
+        ('cashier@vendor.com', 'cashier'),
+        ('waiter@vendor.com', 'waiter'),
+        ('kitchen@vendor.com', 'kitchen'),
     ]
 
     for slug, restaurant in restaurants.items():
@@ -59,7 +59,7 @@ def seed():
                 }
             )
             if created:
-                user.set_password('VadorOS123!')
+                user.set_password('VendorOS123!')
                 user.save()
                 print(f"Created user {final_email}")
 
@@ -72,7 +72,7 @@ def seed():
                 print(f"Linked user {final_email} as {role} for {restaurant.name}")
 
     # Create Global Customer
-    customer_email = 'customer@vador.com'
+    customer_email = 'customer@vendor.com'
     customer_user, created = User.objects.get_or_create(
         username=customer_email,
         defaults={
@@ -81,7 +81,7 @@ def seed():
         }
     )
     if created:
-        customer_user.set_password('VadorOS123!')
+        customer_user.set_password('VendorOS123!')
         customer_user.save()
         print("Created customer user")
 
@@ -128,7 +128,7 @@ def seed():
         ('Single Origin Ethiopia Yirgacheffe Beans', 'kg', 12.5, 10.0),
         ('Oat Milk (Barista Edition)', 'Liters', 45.0, 50.0),
         ('Organic Honey & Spiced Sauces', 'kg', 6.2, 5.0),
-        ('Vador Recyclable Hot Cups (12oz)', 'Units', 1450.0, 2000.0),
+        ('Vendor Recyclable Hot Cups (12oz)', 'Units', 1450.0, 2000.0),
         ('Sidama Single-Origin Espresso', 'kg', 120.0, 10.0),
         ('Spiced Teff Cruffin', 'Units', 22.0, 20.0),
         ('Harar Dark Roast Flat White', 'kg', 240.0, 10.0),
@@ -151,7 +151,7 @@ def seed():
 
     # 5. Populate Realistic Month-Long Order & Transaction History (Dynamic Analytics Seeding)
     now = timezone.now()
-    admin_user = User.objects.get(username='admin@vador.com')
+    admin_user = User.objects.get(username='admin@vendor.com')
 
     print("Generating rich, month-long order history & ledger logs...")
     for slug, restaurant in restaurants.items():

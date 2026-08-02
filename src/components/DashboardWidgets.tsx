@@ -72,8 +72,12 @@ export function MetricCards() {
     retry: 1,
   });
 
-  const liveRevenue = ordersData?.reduce((acc, order) => acc + order.total_amount, 0);
-  const liveOrders = ordersData?.length;
+  const ordersList = ordersData
+    ? (Array.isArray(ordersData) ? ordersData : (ordersData as any).data || [])
+    : [];
+
+  const liveRevenue = ordersList.reduce((acc: any, order: any) => acc + (order.total_amount || order.total || 0), 0);
+  const liveOrders = ordersList.length;
 
   const averageOrderValue = liveOrders && liveRevenue ?liveRevenue / liveOrders : mockMetrics.averageOrder.value;
 
@@ -181,7 +185,7 @@ export function AIInsightsWidget() {
   const t = translations[locale];
 
   const handleApplyInsight = (title: string) => {
-    addQuickActionLog(`Vador AI Auto-Applied Recommendation: ${title}`);
+    addQuickActionLog(`Vendor AI Auto-Applied Recommendation: ${title}`);
   };
 
   return (
@@ -381,8 +385,12 @@ export function RecentOrdersWidget() {
     retry: 1,
   });
 
-  const recentOrdersSource = ordersData
-    ? ordersData.slice(0, 4).map((order) => mapOrderToPreview(order, locale))
+  const ordersListRecent = ordersData
+    ? (Array.isArray(ordersData) ? ordersData : (ordersData as any).data || [])
+    : [];
+
+  const recentOrdersSource = ordersListRecent.length > 0
+    ? ordersListRecent.slice(0, 4).map((order: any) => mapOrderToPreview(order, locale))
     : recentOrders;
 
   const filteredOrders = recentOrdersSource.filter((o) =>
@@ -471,8 +479,8 @@ export function InventoryAlertsWidget() {
   });
 
   const inventoryFeed = inventoryData
-    ? inventoryData
-        .filter((item) => item.status !== 'in_stock')
+    ? (Array.isArray(inventoryData) ? inventoryData : (inventoryData as any).data || [])
+        .filter((item: any) => item.status !== 'in_stock')
         .slice(0, 4)
         .map((item) => ({
           id: item.id,
@@ -499,7 +507,7 @@ export function InventoryAlertsWidget() {
       .replace('Single Origin Ethiopia Yirgacheffe Beans', 'የይርጋጨፌ ሲንግል ኦሪጂን የቡና ፍሬዎች')
       .replace('Oat Milk (Barista Edition)', 'የኦት ወተት (ባሪስታ እትም)')
       .replace('Organic Honey & Spiced Sauces', 'ኦርጋኒክ ማር እና የቅመም ሶሶች')
-      .replace('Vador Recyclable Hot Cups (12oz)', 'የቫዶር ወረቀት ኩባያዎች (12oz)');
+      .replace('Vendor Recyclable Hot Cups (12oz)', 'የቬንዶር ወረቀት ኩባያዎች (12oz)');
   };
 
   const translateUnitName = (unit: string) => {

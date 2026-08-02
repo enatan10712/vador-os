@@ -44,7 +44,7 @@ export default function Sidebar() {
     'Robusta Coffee (Flagship)',
     'Robusta Coffee (Downtown)',
     'Robusta Coffee (Catering)',
-    'Vador Test Workspace'
+    'Vendor Test Workspace'
   ];
 
   const [workspaceDropdown, setWorkspaceDropdown] = React.useState(false);
@@ -76,7 +76,7 @@ export default function Sidebar() {
                 exit={{ opacity: 0 }}
                 className="flex flex-col"
               >
-                <span className="font-bold tracking-tight text-[#F5F4F0] text-sm uppercase">Vador OS</span>
+                <span className="font-bold tracking-tight text-[#F5F4F0] text-sm uppercase">Vendor OS</span>
                 <span className="text-[10px] text-[#C5A880] font-semibold tracking-widest uppercase">{t.saasQuality}</span>
               </motion.div>
             )}

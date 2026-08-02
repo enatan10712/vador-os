@@ -14,7 +14,7 @@ class TenantIsolationMiddleware(MiddlewareMixin):
             tenant_slug = request.GET.get('tenant_slug')
 
         if not tenant_slug:
-            # Fallback to parsing subdomain/host if any (e.g. vador-main.localhost)
+            # Fallback to parsing subdomain/host if any (e.g. vendor-main.localhost)
             host = request.get_host()
             parts = host.split('.')
             if len(parts) > 2:

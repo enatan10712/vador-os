@@ -1,6 +1,6 @@
-# Vador OS — Enterprise Restaurant Operating System
+# Vendor OS — Enterprise Restaurant Operating System
 
-Vador OS is a Next.js 15 & Python Django-powered restaurant operating system tailored for high-frequency workflows. It supports POS terminal transactions, real-time kitchen display, automated inventory tracking, and rich analytical dashboards.
+Vendor OS is a Next.js 15 & Python Django-powered restaurant operating system tailored for high-frequency workflows. It supports POS terminal transactions, real-time kitchen display, automated inventory tracking, and rich analytical dashboards.
 
 This application is fully migrated to a robust Django backend, and has been highly optimized to run both locally and online via a **Vercel (Free Tier)** serverless deployment.
 
@@ -115,11 +115,11 @@ npm run test
 ## 🚀 Vercel & Production Deployment
 
 ### 1. Next.js Frontend (Vercel)
-Vador OS is fully optimized for Vercel's Free Tier:
+Vendor OS is fully optimized for Vercel's Free Tier:
 - Push your project repository to GitHub.
 - Import the repository into your Vercel Dashboard.
 - Set the following environment variable in the Vercel project settings:
-  - `DJANGO_BACKEND_URL`: URL of your deployed online Django backend (e.g., `https://api.vador.live` or your Render/Railway/Fly.io URL).
+  - `DJANGO_BACKEND_URL`: URL of your deployed online Django backend (e.g., `https://api.vendor.live` or your Render/Railway/Fly.io URL).
 - Deploy!
 
 ### 2. Django Backend (Render / Railway / Fly.io)
