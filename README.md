@@ -1,23 +1,35 @@
-# Vador OS — Enterprise Restaurant Operating System
+# Vador OS — Enterprise Restaurant Operating System (ERP)
 
-Vador OS is a Next.js 15 & Python Django-powered restaurant operating system tailored for high-frequency workflows. It supports POS terminal transactions, real-time kitchen display, automated inventory tracking, and rich analytical dashboards.
+Vador OS is a Next.js 15 & Python Django-powered enterprise restaurant operating system (ERP) tailored for high-frequency workflows. It supports point-of-sale (POS) terminal transactions, real-time kitchen display (KDS), automated inventory tracking, floating AI assistant querying, and rich analytical dashboards.
 
-This application is fully migrated to a robust Django backend, and has been highly optimized to run both locally and online via a **Vercel (Free Tier)** serverless deployment.
+This application is fully migrated to a robust Django backend and is highly optimized to run both locally and online via a **Vercel (Free Tier)** serverless deployment.
 
 ---
 
-## 🏗️ Architecture Overview
+## 🏗️ Enterprise Architecture Overview
 
 The system features an enterprise-grade separated architecture:
-- **Frontend**: Next.js 15 (App Router) utilizing React 19, Tailwind CSS, Zustand, React Query, and Framer Motion. Built-in proxy layers map frontend operations directly to the API.
+- **Frontend**: Next.js 15 (App Router) utilizing React 19, Tailwind CSS, Zustand, React Query, and Framer Motion.
 - **Backend**: Python Django with Django REST Framework, implementing transaction-safe models, database locks, structured JSON logging, and multi-tenant isolation.
-- **Vercel (Free Tier) Optimization**: The middleware and authentication routes have been streamlined (reducing bundle size by ~58%) to run efficiently on Edge runtime without requiring external Supabase connections.
+- **CSRF-Secure Next.js Django Proxy**: Standard-compliant secure proxy middleware under `src/lib/djangoProxy.ts` that safely extracts, sanitizes, and forwards `csrftoken` cookies as `X-CSRFToken` to satisfy Django's strict `SessionAuthentication` and secure referer checking over HTTPS.
+- **Enterprise Domain Services**: High-performance core domain logic inside `django_backend/api/services.py`:
+  - `POSTransactionService`: Thread-safe database transactions and row-level locks (`select_for_update()`) during POS stock deduction.
+  - `InventoryManagementService`: Centralized inventory adjustments, reorders, and stock checks.
+  - `AINaturalLanguageService`: Light-weight natural language query service supporting live transactional analysis.
 
 ---
 
 ## ✨ Features Implemented
 
 - **Multi-Tenant Isolation**: Secure data isolation enforced at the Django ORM layer using custom query managers and middleware. Requests are scoped by active tenant (`X-Tenant-Slug`).
+- **Interactive POS Terminal Workspace**:
+  - Spacious, premium 2-column configuration panel (Stripe/Apple-inspired styling).
+  - Multi-currency support (ETB, USD, EUR) with real-time conversion.
+  - Localized Ethiopian taxation models (15% VAT & 2% TOT).
+  - Multi-way bill-splitting with proportional checkout totals.
+  - High-fidelity printable receipts complying with Ethiopian Revenue Authority (ERA) standards, equipped with simulated QR verification links.
+- **Vador AI Co-Pilot Floating Assistant**:
+  - Globally-accessible floating side chat drawer that allows operators to run natural language database queries (e.g. "Show today's revenue" or "What ingredients will finish tomorrow?") in English and Amharic.
 - **Atomic POS & Inventory Checkout**: Utilizes database-level locking (`select_for_update()`) within `transaction.atomic()` blocks to eliminate race conditions and double stock deductions during rapid POS checkout.
 - **Offline Mode & Reconciliation**: A robust `/api/sync/` endpoint processes queue-sequenced transactions captured offline, safely avoiding duplicate stock/order entries.
 - **Immutable Audit Logging**: System actions are saved in an immutable ledger (updates and deletions are strictly blocked at the database model layer).
