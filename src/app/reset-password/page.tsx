@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
     <main className="min-h-screen bg-background px-6 py-10 text-foreground">
       <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center">
         <div className="rounded-3xl border border-border/70 bg-card p-8 shadow-xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Vador OS</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Vendor OS</p>
           <h1 className="mt-3 text-3xl font-black">Reset password</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Choose a strong new password to secure your account and continue back into the dashboard.

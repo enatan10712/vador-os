@@ -8,7 +8,7 @@ from decimal import Decimal
 
 def generate_ai_recommendations(restaurant):
     """
-    Algorithmic AI Engine for Vador OS (2026).
+    Algorithmic AI Engine for Vendor OS (2026).
     Computes 12 dynamic, enterprise-grade recommendations covering:
     - Demand Forecasting & Weekend spikes
     - Dead Stock & Slow-moving inventory

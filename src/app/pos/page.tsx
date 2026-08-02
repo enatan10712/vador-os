@@ -160,7 +160,7 @@ export default function PosPage() {
         currency: paymentCurrency,
         paymentMode: paymentMode,
         timestamp: new Date().toLocaleTimeString(),
-        qrData: `VADOR-POS-VERIFY::ID=${resData.id || 'N/A'}::TOTAL=${totalETB}::VAT=${taxAmountETB}`
+        qrData: `VENDOR-POS-VERIFY::ID=${resData.id || 'N/A'}::TOTAL=${totalETB}::VAT=${taxAmountETB}`
       });
 
       setCheckoutSuccess(true);
@@ -454,7 +454,7 @@ export default function PosPage() {
           {receipt && checkoutSuccess && (
             <div className="glass-panel p-5 rounded-2xl border border-dashed border-[#C5A880]/30 bg-[#161210] text-left">
               <div className="text-center border-b border-white/5 pb-4 mb-4">
-                <h4 className="text-xs font-black text-[#C5A880] uppercase tracking-widest">★ Vador OS Enterprise POS ★</h4>
+                <h4 className="text-xs font-black text-[#C5A880] uppercase tracking-widest">★ Vendor OS Enterprise POS ★</h4>
                 <p className="text-[10px] text-neutral-400 mt-1">Ethiopian Revenue Authority Authorized Fiscal Receipt</p>
                 <p className="text-[9px] text-neutral-500 mt-0.5">Device ID: VR-84950 • Serial: ETH-2026-X9</p>
               </div>
@@ -505,7 +505,7 @@ export default function PosPage() {
                     <QrCode size={90} className="text-black" />
                   </div>
                   <p className="text-[8px] text-neutral-400 font-bold tracking-widest font-mono uppercase bg-[#1A1412] px-3 py-1 rounded-md">
-                    SIG::VERIFIED_BY_VADOR_ERA_2026
+                    SIG::VERIFIED_BY_VENDOR_ERA_2026
                   </p>
                   <p className="text-[8px] text-neutral-500 mt-1 text-center max-w-[220px]">
                     Scan QR code using the Ethiopian Revenue Authority POS App to verify official tax invoice clearance.

@@ -46,7 +46,7 @@ export default function Navbar() {
   const t = translations[locale];
   const unreadCount = notifications.filter(n => n.unread).length;
   const displayName = session?.user.user_metadata?.full_name ?? session?.user.email ?? 'Guest session';
-  const displayInitials = (session?.user.user_metadata?.full_name ?? session?.user.email ?? 'Vador')
+  const displayInitials = (session?.user.user_metadata?.full_name ?? session?.user.email ?? 'Vendor')
     .split(' ')
     .map((part: string) => part[0] ?? '')
     .join('')
@@ -159,7 +159,7 @@ export default function Navbar() {
           {/* AI Helper Quick Trigger */}
           <button
             type="button"
-            onClick={() => handleTriggerAction('Vador AI Quick Audit')}
+            onClick={() => handleTriggerAction('Vendor AI Quick Audit')}
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-amber-600/10 border border-[#C5A880]/30 text-[11px] text-[#C5A880] hover:bg-[#C5A880]/20 font-bold transition-all"
           >
             <Sparkles size={11} className="animate-pulse text-[#C5A880]" />

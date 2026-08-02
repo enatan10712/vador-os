@@ -51,7 +51,7 @@ export default function DashboardGuard({ children }: DashboardGuardProps) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
         <div className="max-w-sm rounded-3xl border border-border bg-card px-8 py-10 text-center shadow-xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Vador OS</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Vendor OS</p>
           <h1 className="mt-3 text-2xl font-black">Checking your session</h1>
           <p className="mt-2 text-sm text-muted-foreground">We are validating access before loading the dashboard.</p>
         </div>

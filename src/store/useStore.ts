@@ -97,13 +97,13 @@ export const useStore = create<AppState>((set, get) => ({
   searchQuery: '',
   activeWorkspace: 'Robusta Coffee (Flagship)',
   notificationOpen: false,
-  quickActionsLog: ['Vador OS booted.', 'Robusta Coffee Workspace loaded.'],
+  quickActionsLog: ['Vendor OS booted.', 'Robusta Coffee Workspace loaded.'],
 
   // Ethiopian default settings (en-ET, ETB)
   locale: 'en',
   setLocale: (locale) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('vador_preferred_locale', locale);
+      localStorage.setItem('vendor_preferred_locale', locale);
     }
     set({ locale });
   },
@@ -123,7 +123,7 @@ export const useStore = create<AppState>((set, get) => ({
     { id: 'k1', orderNumber: '#1042', item: '2x Double Espresso Macchiato (Oat)', timeElapsed: '2m ago', status: 'preparing', type: 'Beverage' },
     { id: 'k2', orderNumber: '#1043', item: '1x Pistachio Croissant, 1x Iced Spanish Latte', timeElapsed: '5m ago', status: 'preparing', type: 'Pastry' },
     { id: 'k3', orderNumber: '#1044', item: '1x Avocado Sourdough Toast', timeElapsed: '8m ago', status: 'pending', type: 'Food' },
-    { id: 'k4', orderNumber: '#1045', item: '1x Vador Signature Nitro Cold Brew', timeElapsed: '11m ago', status: 'pending', type: 'Beverage' },
+    { id: 'k4', orderNumber: '#1045', item: '1x Vendor Signature Nitro Cold Brew', timeElapsed: '11m ago', status: 'pending', type: 'Beverage' },
     { id: 'k5', orderNumber: '#1046', item: '2x Pain au Chocolat', timeElapsed: '15m ago', status: 'pending', type: 'Pastry' },
   ],
 
@@ -131,7 +131,7 @@ export const useStore = create<AppState>((set, get) => ({
     { id: 'n1', title: 'Critical Stock Alert', description: 'Single Origin Ethiopia Yirgacheffe beans below 5kg threshold (4.2kg left).', time: '10m ago', unread: true, type: 'alert' },
     { id: 'n2', title: 'New VIP Guest Check-In', description: 'Mr. Harrison (Platinum Tier) just ordered via Mobile App (Table 4).', time: '15m ago', unread: true, type: 'insight' },
     { id: 'n3', title: 'High Ticket Order', description: 'New catering order #1039 placed: $342.50.', time: '1h ago', unread: false, type: 'order' },
-    { id: 'n4', title: 'AI Automation Active', description: 'Vador AI auto-scheduled a restock draft order for Arabica Blend.', time: '2h ago', unread: false, type: 'system' },
+    { id: 'n4', title: 'AI Automation Active', description: 'Vendor AI auto-scheduled a restock draft order for Arabica Blend.', time: '2h ago', unread: false, type: 'system' },
   ],
 
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
@@ -146,7 +146,7 @@ export const useStore = create<AppState>((set, get) => ({
       } else {
         root.classList.remove('dark');
       }
-      localStorage.setItem('vador_theme', nextTheme);
+      localStorage.setItem('vendor_theme', nextTheme);
     }
     return { theme: nextTheme };
   }),
@@ -158,7 +158,7 @@ export const useStore = create<AppState>((set, get) => ({
       } else {
         root.classList.remove('dark');
       }
-      localStorage.setItem('vador_theme', theme);
+      localStorage.setItem('vendor_theme', theme);
     }
     return { theme };
   }),
@@ -166,7 +166,7 @@ export const useStore = create<AppState>((set, get) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
   setActiveWorkspace: (workspace) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('vador_active_workspace', workspace);
+      localStorage.setItem('vendor_active_workspace', workspace);
     }
     set({ activeWorkspace: workspace });
   },
