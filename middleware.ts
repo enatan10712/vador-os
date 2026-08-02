@@ -1,10 +1,5 @@
-import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse, type NextRequest } from 'next/server';
-import type { Database } from './src/lib/database.types';
 import { getTenantIdFromHost } from './src/lib/tenant';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-key';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 100;
@@ -57,6 +52,27 @@ function isPublicApiPath(pathname: string) {
   return PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+async function getDjangoSession(cookieHeader: string, tenantSlug: string) {
+  const DJANGO_BACKEND_URL = process.env.DJANGO_BACKEND_URL ?? 'http://127.0.0.1:8000';
+  try {
+    const res = await fetch(`${DJANGO_BACKEND_URL}/api/auth/session/`, {
+      method: 'GET',
+      headers: {
+        'Cookie': cookieHeader,
+        'X-Tenant-Slug': tenantSlug,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.session || null;
+    }
+  } catch (err) {
+    console.error('Error fetching Django session in middleware:', err);
+  }
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const tenantSlug = getTenantIdFromHost(request.headers.get('host') ?? undefined);
@@ -71,21 +87,8 @@ export async function middleware(request: NextRequest) {
 
   response.headers.set('x-tenant-slug', tenantSlug);
 
-  const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  const session = sessionData.session;
+  const cookieHeader = request.headers.get('cookie') || '';
+  const session = await getDjangoSession(cookieHeader, tenantSlug);
 
   if (isApiPath(pathname)) {
     if (isPublicApiPath(pathname)) {
